@@ -1,6 +1,9 @@
 import argparse
 import os
-from flask import Flask, render_template
+import smtplib
+import ssl
+from email.message import EmailMessage
+from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
@@ -83,6 +86,32 @@ WORD_DEFINITIONS = {
 WORD_LIST = list(WORD_DEFINITIONS.keys())
 DAILY_WORD_COUNT = 5
 
+
+def load_dotenv_file(filename='.env'):
+    if not os.path.exists(filename):
+        return
+
+    with open(filename, 'r', encoding='utf-8') as env_file:
+        for line in env_file:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+load_dotenv_file()
+
+SMTP_SERVER = os.environ.get('SMTP_SERVER')
+SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
+SMTP_USERNAME = os.environ.get('SMTP_USERNAME')
+SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
+EMAIL_SENDER = os.environ.get('EMAIL_SENDER') or SMTP_USERNAME
+
 @app.route('/')
 def index():
     return render_template(
@@ -91,6 +120,58 @@ def index():
         word_definitions=WORD_DEFINITIONS,
         daily_word_count=DAILY_WORD_COUNT,
     )
+
+def build_email_body(words):
+    parts = ['<h2>Daily English Word Reminder</h2>', '<p>Here are your 5 words for today:</p>', '<ul>']
+    plain_lines = ['Daily English Word Reminder', '', 'Here are your 5 words for today:', '']
+    for word in words:
+        definition = WORD_DEFINITIONS.get(word, 'No definition available.')
+        plain_lines.append(f'{word}: {definition}')
+        parts.append(f'<li><strong>{word}</strong>: {definition}</li>')
+    parts.append('</ul>')
+    parts.append('<p>Keep practicing and review them again later today.</p>')
+    plain_lines.append('')
+    plain_lines.append('Keep practicing and review them again later today.')
+    return '\n'.join(plain_lines), '\n'.join(parts)
+
+def send_email_message(recipients, subject, words):
+    if not SMTP_SERVER or not SMTP_USERNAME or not SMTP_PASSWORD or not EMAIL_SENDER:
+        raise ValueError('SMTP configuration is incomplete. Set SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD, and EMAIL_SENDER.')
+
+    plain_text, html_text = build_email_body(words)
+    message = EmailMessage()
+    message['Subject'] = subject
+    message['From'] = EMAIL_SENDER
+    message['To'] = ', '.join(recipients)
+    message.set_content(plain_text)
+    message.add_alternative(html_text, subtype='html')
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=20) as server:
+        server.starttls(context=context)
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.send_message(message)
+
+@app.route('/send-email', methods=['POST'])
+def send_email_route():
+    payload = request.get_json(silent=True) or {}
+    recipients_raw = payload.get('recipients', '')
+    recipients = [address.strip() for address in recipients_raw.replace(';', ',').split(',') if address.strip()]
+
+    if not recipients:
+        return jsonify(success=False, error='Enter at least one email address.'), 400
+
+    words = payload.get('words') or []
+    if not isinstance(words, list) or len(words) == 0:
+        return jsonify(success=False, error='No words available to send.'), 400
+
+    subject = payload.get('subject', 'Daily English Word Reminder')
+
+    try:
+        send_email_message(recipients, subject, words)
+        return jsonify(success=True, message='Email reminder sent successfully.')
+    except Exception as exc:
+        return jsonify(success=False, error=str(exc)), 500
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run the English word reminder app.')

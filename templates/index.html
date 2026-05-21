@@ -9,91 +9,191 @@
             color-scheme: light;
             --bg: #eef6ff;
             --surface: #ffffff;
-            --surface-strong: #f8fbff;
+            --surface-soft: #f8fbff;
+            --surface-strong: #edf2ff;
             --text: #0f172a;
             --muted: #475569;
             --primary: #2563eb;
             --primary-strong: #1d4ed8;
             --accent: #22c55e;
             --danger: #dc2626;
-            --radius: 20px;
+            --radius: 24px;
+            --shadow: 0 24px 90px rgba(15, 23, 42, 0.08);
         }
 
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: radial-gradient(circle at top, #ffffff, #dbeafe 40%, #e2e8f0 100%); color: var(--text); }
-        .page { width: min(100%, 980px); margin: 0 auto; padding: 32px 20px 48px; }
-        header { margin-bottom: 28px; }
-        h1 { margin: 0 0 10px; font-size: clamp(2rem, 2.5vw, 3rem); line-height: 1.05; }
-        .lead { margin: 0; max-width: 760px; color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
-        .alert { display: inline-flex; align-items: center; gap: 12px; padding: 16px 18px; background: rgba(37, 99, 235, 0.1); border-radius: var(--radius); color: var(--text); margin-bottom: 24px; border: 1px solid rgba(37, 99, 235, 0.18); }
+        html, body { min-height: 100%; }
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #ffffff, #dbeafe 36%, #e2e8f0 100%);
+            color: var(--text);
+        }
+
+        .page {
+            width: min(100%, 1100px);
+            margin: 0 auto;
+            padding: 36px 24px 48px;
+        }
+
+        header { margin-bottom: 32px; }
+        h1 { margin: 0 0 12px; font-size: clamp(2.4rem, 4vw, 3.6rem); line-height: 1.02; }
+        .lead { margin: 0; max-width: 820px; color: var(--muted); font-size: 1.05rem; line-height: 1.8; }
+
+        .alert {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 20px;
+            background: rgba(37, 99, 235, 0.12);
+            border-radius: 22px;
+            color: var(--text);
+            margin-bottom: 28px;
+            border: 1px solid rgba(37, 99, 235, 0.18);
+        }
+
         .grid { display: grid; gap: 22px; }
-        .box { background: var(--surface); border-radius: var(--radius); box-shadow: 0 24px 90px rgba(15, 23, 42, 0.08); padding: 26px; }
-        label { display: block; margin-bottom: 12px; font-size: 0.98rem; font-weight: 700; }
-        input[type=time] { width: 100%; max-width: 220px; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 16px; background: #f8fafc; font-size: 1rem; color: var(--text); }
-        .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-        button { border: none; border-radius: 16px; cursor: pointer; transition: transform 0.16s ease, background-color 0.16s ease; font-weight: 700; }
+        .card-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+
+        .box {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 28px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.15rem;
+            letter-spacing: -0.02em;
+        }
+
+        .form-field { margin-bottom: 18px; }
+        .form-field label { display: block; margin-bottom: 10px; font-size: 0.98rem; font-weight: 700; }
+        .input,
+        .textarea { width: 100%; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 16px; background: #f8fafc; color: var(--text); font-size: 1rem; }
+        .textarea { min-height: 120px; resize: vertical; }
+        .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+        .row > * { flex: 1 1 180px; }
+
+        button { border: none; border-radius: 16px; cursor: pointer; transition: transform 0.16s ease, background-color 0.16s ease, opacity 0.16s ease; font-weight: 700; }
         button:hover { transform: translateY(-1px); }
         .btn-primary { background: var(--primary); color: white; padding: 14px 18px; }
         .btn-secondary { background: #e2e8f0; color: var(--text); padding: 14px 18px; }
-        .status { margin-top: 16px; font-weight: 700; color: var(--text); }
-        .hint { margin-top: 12px; color: var(--muted); line-height: 1.7; }
-        .words { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
-        .word-card { padding: 20px; background: #f8fbff; border: 1px solid #dbeafe; border-radius: 20px; min-height: 180px; display: flex; flex-direction: column; justify-content: space-between; }
-        .word-title { font-size: 1.3rem; font-weight: 800; text-transform: capitalize; margin-bottom: 12px; }
-        .word-definition { color: var(--muted); line-height: 1.7; margin-bottom: 16px; flex-grow: 1; }
+        .btn-ghost { background: transparent; color: var(--primary); padding: 12px 16px; border: 1px solid rgba(37, 99, 235, 0.22); }
+
+        .status { margin-top: 14px; font-weight: 700; color: var(--text); }
+        .hint { margin-top: 10px; color: var(--muted); line-height: 1.7; }
+        .status-note { margin-top: 10px; font-size: 0.96rem; color: var(--muted); }
+
+        .words { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; }
+        .word-card { padding: 22px; background: var(--surface-soft); border: 1px solid #dbeafe; border-radius: 24px; min-height: 200px; display: flex; flex-direction: column; justify-content: space-between; }
+        .word-title { font-size: 1.35rem; font-weight: 800; text-transform: capitalize; margin-bottom: 12px; }
+        .word-definition { color: var(--muted); line-height: 1.75; margin-bottom: 18px; flex-grow: 1; }
         .word-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .word-button { flex: 1 1 auto; padding: 10px 14px; border-radius: 14px; color: white; }
+        .word-button { flex: 1 1 auto; padding: 12px 14px; border-radius: 16px; color: white; }
         .word-button.learned { background: var(--accent); }
         .word-button.unlearned { background: var(--primary); }
-        .progress-bar { width: 100%; height: 14px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 12px; }
+
+        .progress-bar { width: 100%; height: 16px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 12px; }
         .progress-bar-fill { height: 100%; border-radius: 999px; background: var(--primary); width: 0%; transition: width 0.3s ease; }
+
         .history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-        .history-item { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 14px 16px; background: #f8fafc; border: 1px solid #dbeafe; border-radius: 16px; color: var(--text); }
+        .history-item { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 16px 18px; background: #f8fafc; border: 1px solid #dbeafe; border-radius: 18px; color: var(--text); }
         .history-action { font-weight: 700; }
         .history-time { color: var(--muted); font-size: 0.95rem; text-align: right; }
         .empty-state { color: var(--muted); font-size: 0.98rem; margin-top: 12px; }
+        .status-badge { display: inline-flex; gap: 8px; align-items: center; padding: 10px 14px; border-radius: 14px; background: #f8fafc; color: var(--muted); border: 1px solid #e2e8f0; }
+        .status-badge strong { color: var(--text); }
+
+        @media (max-width: 640px) {
+            .row { flex-direction: column; }
+            .page { padding: 24px 16px 36px; }
+        }
     </style>
 </head>
 <body>
     <div class="page">
         <header>
             <h1>Daily English Word Reminder</h1>
-            <p class="lead">Choose your daily study time once. When your reminder arrives, 5 random English words will appear for today’s practice.</p>
+            <p class="lead">Choose a daily study time, review a fresh set of 5 words every day, and send them to your email list with one click.</p>
         </header>
 
         <div class="alert">
             <span>Tip:</span>
-            <span>Keep this page open and allow notifications. You can track progress and view reminder history as you study.</span>
+            <span>Keep this page open for browser reminders and save your email list to send word summaries instantly.</span>
+        </div>
+
+        <div class="grid">
+            <section class="box">
+                <div class="section-header">
+                    <h2>Reminder schedule</h2>
+                    <span class="status-badge">Daily words: <strong>{{ daily_word_count }}</strong></span>
+                </div>
+                <div class="form-field">
+                    <label for="reminder-time">Reminder time</label>
+                    <input id="reminder-time" class="input" type="time" />
+                </div>
+                <div class="row">
+                    <button id="save-reminder" class="btn-primary">Save reminder</button>
+                    <button id="show-now" class="btn-secondary">Show words now</button>
+                </div>
+                <div id="next-reminder" class="status"></div>
+                <p id="notification-status" class="hint"></p>
+                <p class="hint">Your reminder preferences, progress, and words are stored in your browser. The word set refreshes every day.</p>
+            </section>
+
+            <section class="box">
+                <div class="section-header">
+                    <h2>Email reminder</h2>
+                    <span class="status-badge">SMTP ready</span>
+                </div>
+                <div class="form-field">
+                    <label for="email-list">Recipients</label>
+                    <textarea id="email-list" class="textarea" placeholder="Enter email addresses separated by commas or new lines"></textarea>
+                </div>
+                <div class="form-field">
+                    <label for="email-subject">Email subject</label>
+                    <input id="email-subject" class="input" type="text" placeholder="Daily English Word Reminder" />
+                </div>
+                <button id="send-email" class="btn-primary">Send email reminder</button>
+                <p id="email-status" class="status-note">Add one or more recipients and send your current daily words by email.</p>
+            </section>
         </div>
 
         <section class="box">
-            <label for="reminder-time">Reminder time</label>
-            <div class="controls">
-                <input id="reminder-time" type="time" />
-                <button id="save-reminder" class="btn-primary">Save reminder</button>
-                <button id="show-now" class="btn-secondary">Show words now</button>
+            <div class="section-header">
+                <h2>Today's progress</h2>
+                <span class="status-badge">Keep track</span>
             </div>
-            <div id="next-reminder" class="status"></div>
-            <div id="notification-status" class="hint"></div>
-            <div class="hint">The reminder and study progress are saved in your browser. Words replay each day with a new set after midnight.</div>
-        </section>
-
-        <section class="box">
-            <div class="status">Today's progress</div>
             <div id="progress-summary" class="status"></div>
             <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
-            <div id="reminder-status" class="hint"></div>
+            <p id="reminder-status" class="hint"></p>
         </section>
 
         <section class="box">
-            <div class="status">Your daily study words</div>
+            <div class="section-header">
+                <h2>Your daily study words</h2>
+                <span class="status-badge">Interactive</span>
+            </div>
             <div id="word-list" class="words"></div>
         </section>
 
         <section class="box">
-            <div class="status">Reminder history</div>
+            <div class="section-header">
+                <h2>Reminder history</h2>
+                <span class="status-badge">Recent actions</span>
+            </div>
             <ul id="history-list" class="history-list"></ul>
-            <div id="history-empty" class="empty-state">No reminder history yet. Save a reminder or view words to start tracking.</div>
+            <div id="history-empty" class="empty-state">No reminder history yet. Save a reminder, send an email, or view words to start tracking.</div>
         </section>
     </div>
 

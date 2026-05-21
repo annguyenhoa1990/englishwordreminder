@@ -9,12 +9,17 @@ const progressBarFill = document.getElementById('progress-bar-fill');
 const historyListEl = document.getElementById('history-list');
 const historyEmptyEl = document.getElementById('history-empty');
 const notificationStatusEl = document.getElementById('notification-status');
+const emailListTextarea = document.getElementById('email-list');
+const emailSubjectInput = document.getElementById('email-subject');
+const sendEmailButton = document.getElementById('send-email');
+const emailStatusEl = document.getElementById('email-status');
 
 const STORAGE_KEY = 'english-word-reminder';
 const DAILY_WORDS_KEY = 'english-word-reminder-words';
 const PROGRESS_KEY = 'english-word-reminder-progress';
 const HISTORY_KEY = 'english-word-reminder-history';
 const SHOWN_DAY_KEY = 'english-word-reminder-shown-date';
+const EMAIL_RECIPIENTS_KEY = 'english-word-reminder-email-recipients';
 
 function pad(value) {
     return value.toString().padStart(2, '0');
@@ -66,6 +71,22 @@ function saveTodayProgress(progress) {
     const data = getProgressData();
     data[getTodayKey()] = progress;
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
+}
+
+function getEmailRecipients() {
+    return localStorage.getItem(EMAIL_RECIPIENTS_KEY) || '';
+}
+
+function saveEmailRecipients(value) {
+    localStorage.setItem(EMAIL_RECIPIENTS_KEY, value);
+}
+
+function parseRecipients(raw) {
+    return raw
+        .replace(/\s+/g, ',')
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
 }
 
 function toggleLearned(word) {
@@ -159,7 +180,7 @@ function hideWords() {
 function updateReminderDisplay(reminderTime) {
     if (!reminderTime) {
         nextReminderEl.textContent = 'No reminder set yet.';
-        reminderStatusEl.textContent = 'Set a time and keep this page open to see the reminder.';
+        reminderStatusEl.textContent = 'Set a time and keep this page open to receive the alert.';
         hideWords();
         return;
     }
@@ -243,6 +264,55 @@ function checkReminder() {
     reminderStatusEl.textContent = `Your words will appear at ${reminderTime}. (${diffMinutes} minutes remaining)`;
 }
 
+function setEmailStatus(message, isError = false) {
+    emailStatusEl.textContent = message;
+    emailStatusEl.style.color = isError ? '#b91c1c' : '#475569';
+}
+
+async function sendEmailReminder() {
+    const recipients = parseRecipients(emailListTextarea.value);
+    const wordsToSend = getDailyWords();
+
+    if (recipients.length === 0) {
+        setEmailStatus('Please add at least one valid email address.', true);
+        return;
+    }
+
+    if (wordsToSend.length === 0) {
+        setEmailStatus('No words available to send.', true);
+        return;
+    }
+
+    const subject = emailSubjectInput.value.trim() || 'Daily English Word Reminder';
+    setEmailStatus('Sending email reminder…');
+    sendEmailButton.disabled = true;
+
+    try {
+        const response = await fetch('/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipients: recipients.join(','),
+                subject,
+                words: wordsToSend,
+            }),
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            setEmailStatus('Email reminder sent successfully.');
+            saveEmailRecipients(emailListTextarea.value);
+            addHistory(`Sent email reminder to ${recipients.length} address${recipients.length === 1 ? '' : 'es'}`);
+        } else {
+            setEmailStatus(data.error || 'Unable to send email reminder.', true);
+        }
+    } catch (error) {
+        setEmailStatus('Network error. Please try again later.', true);
+    } finally {
+        sendEmailButton.disabled = false;
+    }
+}
+
 saveButton.addEventListener('click', () => {
     const time = reminderInput.value;
     if (!time) {
@@ -263,7 +333,10 @@ showNowButton.addEventListener('click', () => {
     addHistory('Viewed today’s words manually');
 });
 
+sendEmailButton.addEventListener('click', sendEmailReminder);
+
 window.addEventListener('load', () => {
+    emailListTextarea.value = getEmailRecipients();
     updateNotificationStatus();
     requestNotificationPermission();
     renderHistory();
