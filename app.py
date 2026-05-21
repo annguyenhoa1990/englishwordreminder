@@ -1,7 +1,10 @@
 import argparse
+import json
 import os
 import smtplib
 import ssl
+import urllib.error
+import urllib.request
 from email.message import EmailMessage
 from flask import Flask, render_template, request, jsonify
 
@@ -110,7 +113,17 @@ SMTP_SERVER = os.environ.get('SMTP_SERVER')
 SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
 SMTP_USERNAME = os.environ.get('SMTP_USERNAME')
 SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+SENDGRID_SENDER = os.environ.get('SENDGRID_SENDER') or os.environ.get('EMAIL_SENDER') or SMTP_USERNAME
 EMAIL_SENDER = os.environ.get('EMAIL_SENDER') or SMTP_USERNAME
+
+def is_sendgrid_configured():
+    return bool(SENDGRID_API_KEY and SENDGRID_SENDER)
+
+
+def is_smtp_configured():
+    return bool(SMTP_SERVER and SMTP_USERNAME and SMTP_PASSWORD and EMAIL_SENDER)
+
 
 @app.route('/')
 def index():
@@ -119,6 +132,11 @@ def index():
         word_list=WORD_LIST,
         word_definitions=WORD_DEFINITIONS,
         daily_word_count=DAILY_WORD_COUNT,
+        smtp_configured=is_smtp_configured(),
+        sendgrid_configured=is_sendgrid_configured(),
+        smtp_server=SMTP_SERVER,
+        smtp_username=SMTP_USERNAME,
+        sendgrid_sender=SENDGRID_SENDER,
     )
 
 def build_email_body(words):
@@ -134,8 +152,9 @@ def build_email_body(words):
     plain_lines.append('Keep practicing and review them again later today.')
     return '\n'.join(plain_lines), '\n'.join(parts)
 
-def send_email_message(recipients, subject, words):
-    if not SMTP_SERVER or not SMTP_USERNAME or not SMTP_PASSWORD or not EMAIL_SENDER:
+
+def send_smtp_message(recipients, subject, words):
+    if not is_smtp_configured():
         raise ValueError('SMTP configuration is incomplete. Set SMTP_SERVER, SMTP_USERNAME, SMTP_PASSWORD, and EMAIL_SENDER.')
 
     plain_text, html_text = build_email_body(words)
@@ -151,6 +170,52 @@ def send_email_message(recipients, subject, words):
         server.starttls(context=context)
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.send_message(message)
+
+
+def send_sendgrid_message(recipients, subject, words):
+    if not is_sendgrid_configured():
+        raise ValueError('SendGrid is not configured. Set SENDGRID_API_KEY and SENDGRID_SENDER.')
+
+    plain_text, html_text = build_email_body(words)
+    payload = {
+        'personalizations': [
+            {
+                'to': [{'email': recipient} for recipient in recipients],
+                'subject': subject,
+            }
+        ],
+        'from': {'email': SENDGRID_SENDER},
+        'content': [
+            {'type': 'text/plain', 'value': plain_text},
+            {'type': 'text/html', 'value': html_text},
+        ],
+    }
+    request_data = json.dumps(payload).encode('utf-8')
+    request_headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {SENDGRID_API_KEY}',
+    }
+    request = urllib.request.Request(
+        'https://api.sendgrid.com/v3/mail/send',
+        data=request_data,
+        headers=request_headers,
+        method='POST',
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            if response.status not in (200, 202):
+                raise RuntimeError(f'SendGrid returned status {response.status}')
+    except urllib.error.HTTPError as error:
+        body = error.read().decode('utf-8', errors='ignore')
+        raise RuntimeError(f'SendGrid error: {error.code} {error.reason} - {body}') from error
+
+
+def send_email_message(recipients, subject, words):
+    if is_sendgrid_configured():
+        return send_sendgrid_message(recipients, subject, words)
+    return send_smtp_message(recipients, subject, words)
+
 
 @app.route('/send-email', methods=['POST'])
 def send_email_route():

@@ -154,7 +154,7 @@
             <section class="box">
                 <div class="section-header">
                     <h2>Email reminder</h2>
-                    <span class="status-badge">SMTP ready</span>
+                    <span class="status-badge">Email transport</span>
                 </div>
                 <div class="form-field">
                     <label for="email-list">Recipients</label>
@@ -166,6 +166,13 @@
                 </div>
                 <button id="send-email" class="btn-primary">Send email reminder</button>
                 <p id="email-status" class="status-note">Add one or more recipients and send your current daily words by email.</p>
+                {% if sendgrid_configured %}
+                    <p class="hint">SendGrid is configured using <strong>{{ sendgrid_sender }}</strong>.</p>
+                {% elif smtp_configured %}
+                    <p class="hint">SMTP is configured for <strong>{{ smtp_username }}</strong> on <strong>{{ smtp_server }}</strong>.</p>
+                {% else %}
+                    <p class="hint" style="color: #b91c1c;">No email provider is configured in production. Set Render environment variables and redeploy.</p>
+                {% endif %}
             </section>
         </div>
 
